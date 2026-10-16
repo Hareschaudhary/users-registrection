@@ -66,4 +66,4 @@ app.use((err, req, res, _next) => {
   return res.status(500).json({ error: 'Internal Server Error' });
 });
 
-module.exports = { app, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS };
+module.exports = app;
