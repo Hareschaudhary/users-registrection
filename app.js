@@ -14,6 +14,32 @@ if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PRO
 
 app.use(express.json({ limit: '10kb' }));
 
+const connectDB = require('./config/db');
+
+let dbConnectionPromise;
+
+app.use(async (req, res, next) => {
+  try {
+    if (!dbConnectionPromise) {
+      dbConnectionPromise = connectDB().catch((err) => {
+        dbConnectionPromise = null;
+        throw err;
+      });
+    }
+
+    await dbConnectionPromise;
+    next();
+  } catch (err) {
+    console.error('MongoDB connection failed:', err.message);
+
+    res.status(503).json({
+      ok: false,
+      message: 'Database connection failed',
+      error: err.message,
+    });
+  }
+});
+
 // Logger: runs first so that rate-limited (429) requests are logged too.
 app.use((req, res, next) => {
   res.on('finish', () => {
