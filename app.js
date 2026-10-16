@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const userRoutes = require('./routes/userRoutes');
+const mongoose = require('mongoose');
 
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX) || 5;
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000;
