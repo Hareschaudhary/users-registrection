@@ -41,6 +41,58 @@ const limiter = rateLimit({
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
+
+app.get('/health/mongodb', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState;
+
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting',
+    };
+
+    if (state !== 1) {
+      return res.status(503).json({
+        ok: false,
+        message: 'MongoDB is not connected',
+        connectionState: states[state] || 'unknown',
+        readyState: state,
+        mongoUriConfigured: Boolean(process.env.MONGODB_URI),
+      });
+    }
+
+    // Verify that MongoDB responds to a command.
+    await mongoose.connection.db.admin().ping();
+
+    // Read collection names in the current database.
+    const collections = await mongoose.connection.db
+      .listCollections({}, { nameOnly: true })
+      .toArray();
+
+    return res.status(200).json({
+      ok: true,
+      message: 'MongoDB connection successful',
+      connectionState: states[state],
+      database: mongoose.connection.name,
+      collections: collections.map((item) => item.name),
+      collectionCount: collections.length,
+    });
+  } catch (err) {
+    console.error('[MongoDB Diagnostic Error]', err);
+
+    return res.status(500).json({
+      ok: false,
+      message: 'MongoDB diagnostic failed',
+      errorName: err.name,
+      errorMessage: err.message,
+      mongoUriConfigured: Boolean(process.env.MONGODB_URI),
+    });
+  }
+});
+
+
 app.get('/api/data', limiter, (req, res) => {
   const requestId = crypto.randomUUID();
   res.set('X-Request-Id', requestId);
